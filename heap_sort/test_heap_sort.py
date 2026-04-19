@@ -1,26 +1,64 @@
 import pytest
 import random
 from heap_sort import win2, is_leaf, swap, has_only_one_child, find_winner_n_swap, sift_down, make_heap, heap_sort
+from heap_sort import keyf_ascend, keyf_descend
 """
 TODO:
 - в контракты функций swap, win2 добавить динамаическую длину N
-- добавить компаратор в heap_sort
+- расширить сравнения на элементы типа str, bool, tuple, list, ...
 """
 
-@pytest.mark.parametrize("array, expected", [
-    ([], []),
-    ([1], [1]),
-    ([1]*2, [1, 1]),
-    ([1]*3, [1]*3),
-    ([2]*4, [2]*4),
-    (a:=[random.randint(-100, 100) for _ in range(100)], sorted(a)),
-    (a:=[x for x in range(100)], sorted(a)),
-    (a:=[x for x in range(100, -1, -1)], sorted(a)),
+
+def test_key_functions():
+    assert keyf_ascend(356) == 356
+    assert keyf_ascend(128) == 128
+    assert keyf_ascend(356) >= keyf_ascend(128)
+    assert keyf_ascend(356) >= keyf_ascend(356)
+
+    assert keyf_descend(356) == -356
+    assert keyf_descend(128) == -128
+    assert keyf_descend(128) >= keyf_descend(356)
+    assert keyf_descend(356) >= keyf_descend(356)
+
+@pytest.mark.parametrize("array, expected, key_function", [
+    ([], [], keyf_ascend),
+    ([1], [1], keyf_ascend),
+    ([1, 0.5], [0.5, 1], keyf_ascend),
+    ([1.0, 1], [1.0, 1], keyf_ascend),
+    ([1, 1.0], [1, 1.0], keyf_ascend),
+    ([1]*2, [1, 1], keyf_ascend),
+    ([1]*3, [1]*3, keyf_ascend),
+    ([2]*4, [2]*4, keyf_ascend),
+    (a:=[random.randint(-100, 100) for _ in range(100)], sorted(a), keyf_ascend),
+    (a:=[x for x in range(100)], sorted(a), keyf_ascend),
+    (a:=[x for x in range(100, -1, -1)], sorted(a), keyf_ascend),
+    ([], [], keyf_descend),
+    ([1], [1], keyf_descend),
+    ([0.5, 1], [1, 0.5], keyf_descend),
+    ([1.0, 1], [1.0, 1], keyf_descend),
+    ([1, 1.0], [1, 1.0], keyf_descend),
+    ([1]*2, [1, 1], keyf_descend),
+    ([1]*3, [1]*3, keyf_descend),
+    ([2]*4, [2]*4, keyf_descend),
+    (a:=[random.randint(-100, 100) for _ in range(100)], sorted(a, reverse=True), keyf_descend),
+    (a:=[x for x in range(100)], sorted(a, reverse=True), keyf_descend),
+    (a:=[x for x in range(100, -1, -1)], sorted(a, reverse=True), keyf_descend),
 ])
-def test_heap_sort(array, expected):
-    heap_sort(array)
+def test_heap_sort(array, expected, key_function):
+    heap_sort(array, key_function)
     assert array == expected 
 
+
+
+
+@pytest.mark.parametrize("array, expected", [
+    ([1, "0.5"], ["0.5", 1]),
+    ([None, 1], [None, 1]),
+])
+def test_heap_sort_exceptions(array, expected):
+    with pytest.raises(TypeError):
+        heap_sort(array)
+        assert array == expected
 
 @pytest.mark.parametrize("array, expected", [
     ([1, 2, 3], [3, 2, 1]),
@@ -32,7 +70,7 @@ def test_heap_sort(array, expected):
     ([1, 2, 3, 4, 5], [5, 4, 3, 1, 2]),
 ])
 def test_make_heap(array, expected):
-    make_heap(array)
+    make_heap(array, keyf_ascend)
     assert array == expected
 
 
@@ -50,7 +88,7 @@ def test_make_heap(array, expected):
     ([4, 5, 1, 2, 3, 6], 0, [5, 4, 1, 2, 3, 6]),
 ])
 def test_sift_down(array, elem, expected):
-    sift_down(array, len(array), elem)
+    sift_down(array, len(array), elem, keyf_ascend)
     assert array == expected
 
 @pytest.mark.parametrize("array, elem", [
@@ -60,7 +98,7 @@ def test_sift_down(array, elem, expected):
 ])
 def test_sift_down_exceptions(array, elem):
     with pytest.raises(AssertionError):
-        sift_down(array, len(array), elem)
+        sift_down(array, len(array), elem, keyf_ascend)
 
 
 @pytest.mark.parametrize("array, elem, expected_array, expected_winner", [
@@ -82,7 +120,7 @@ def test_sift_down_exceptions(array, elem):
     ([1, 2, 6, 4, 5, 6], 2, [1, 2, 6, 4, 5, 6], 2),
 ])
 def test_find_winner_n_swap(array, elem, expected_array, expected_winner): 
-    winner = find_winner_n_swap(array, len(array), elem)
+    winner = find_winner_n_swap(array, len(array), elem, keyf_ascend)
     assert winner == expected_winner
     assert array == expected_array 
 
@@ -101,7 +139,7 @@ def test_find_winner_n_swap(array, elem, expected_array, expected_winner):
 ])
 def test_find_winner_n_swap_exceptions(array, elem):
     with pytest.raises(AssertionError):
-        find_winner_n_swap(array, len(array), elem)
+        find_winner_n_swap(array, len(array), elem, keyf_ascend)
 
 @pytest.mark.parametrize("N, i", [
     (0, 0),
@@ -187,25 +225,32 @@ def test_is_leaf_exceptions(N, i):
         is_leaf(N, i)
 
 
-@pytest.mark.parametrize("array, i, j, expected", [
-    ([1, 2, 3], 0, 1, 1),
-    ([1], 0, 0, 0),
-    ([1, 3, 2], 1, 2, 1),
-    ([1, 1, 1], 0, 1, 0),
-    ([-1, 2, 3], 0, 1, 1),
-    ([1, 2, 3], 1, 0, 1),
-    ([2, 2, 3], 1, 0, 1),
+@pytest.mark.parametrize("array, i, j, expected, key_function", [
+    ([1, 2, 3], 0, 1, 1, keyf_ascend),
+    ([1], 0, 0, 0, keyf_ascend),
+    ([1, 3, 2], 1, 2, 1, keyf_ascend),
+    ([1, 1, 1], 0, 1, 0, keyf_ascend),
+    ([-1, 2, 3], 0, 1, 1, keyf_ascend),
+    ([1, 2, 3], 1, 0, 1, keyf_ascend),
+    ([2, 2, 3], 1, 0, 1, keyf_ascend),
+    ([1, 2, 3], 0, 1, 0, keyf_descend),
+    ([1, 2, 3], 1, 1, 1, keyf_descend),
+    ([1, 2, 3], 1, 2, 1, keyf_descend),
+    ([1, 2, 2], 1, 2, 1, keyf_descend),
+    ([1], 0, 0, 0, keyf_descend),
 ])
-def test_win2(array, i, j, expected):
-    assert win2(array, i, j) == expected
+def test_win2(array, i, j, expected, key_function):
+    assert win2(array, i, j, key_function) == expected
 
-@pytest.mark.parametrize("array, i, j", [
-    ([], 0, 0),
-    ([1], 0, 1),
-    ([1], 1, 0),
-    ([1], -1, 0),
-    ([1], 0, -1),
+@pytest.mark.parametrize("array, i, j, exception_type", [
+    ([], 0, 0, AssertionError),
+    ([1], 0, 1, AssertionError),
+    ([1], 1, 0, AssertionError),
+    ([1], -1, 0, AssertionError),
+    ([1], 0, -1, AssertionError),
+    ([1, None], 0, 1, TypeError),
+    ([1, "1"], 0, 1, TypeError),
 ])
-def test_win2_exceptions(array, i, j):
-    with pytest.raises(AssertionError):
-        win2(array, i, j)
+def test_win2_exceptions(array, i, j, exception_type):
+    with pytest.raises(exception_type):
+        win2(array, i, j, keyf_ascend)
