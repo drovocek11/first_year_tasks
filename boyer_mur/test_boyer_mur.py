@@ -1,5 +1,6 @@
 import pytest
-from main import generate_char_table, max, index_after_shift, my_strstr
+from main import generate_char_table, max, index_after_shift, my_strstr, generate_char_table_new
+from main import my_strstr_new
 
 @pytest.mark.parametrize("second_number, expected", [
     (1, 1),
@@ -20,6 +21,16 @@ def test_max(second_number, expected):
 def test_generate_char_table(string, expected):
     assert generate_char_table(string) == expected
 
+@pytest.mark.parametrize("string, expected", [
+    ("a", {"a":1}),
+    ("aa", {"a":1}),
+    ("aaa", {"a":2}),
+    ("ab", {"a":1, "b":1}),
+    ("stringing", {"s":8, "t":7, "r":6, "i":5, "n":4, "g":3}),
+])
+def test_generate_char_table_new(string, expected):
+    assert generate_char_table_new(string) == expected
+
 @pytest.mark.parametrize("haystack, needle, last_index_needle, last_index_haystack, needle_shift_table, expected", [
     ("tree", "ee", 1, 1, generate_char_table("ee"), 3),
     ("tree", "tr", 1, 1, generate_char_table("tr"), 0),
@@ -35,7 +46,7 @@ def test_index_after_shift(haystack, needle, last_index_needle, last_index_hayst
     i = last_index_haystack
     assert index_after_shift(haystack, needle, needle_shift_table, i, j) == expected
 
-
+@pytest.mark.parametrize("func", [my_strstr, my_strstr_new])
 @pytest.mark.parametrize("haystack, needle, expected", [
     ("babokat123", "", -1),
     ("babokat123", "kat", 4),
@@ -52,5 +63,5 @@ def test_index_after_shift(haystack, needle, last_index_needle, last_index_hayst
     ("aaabcaxaca......", "abca", 2),
     ("11231xaca......", "abca", -1),
 ])
-def test_my_strstr(haystack, needle, expected):
-    assert my_strstr(haystack, needle) == expected
+def test_my_strstr(func, haystack, needle, expected):
+    assert func(haystack, needle) == expected
